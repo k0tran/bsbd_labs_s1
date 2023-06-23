@@ -1,0 +1,5 @@
+# lab1
+lab1/**/*.aux
+lab1/**/*.dvi
+lab1/**/*.log
+lab1/**/*.syntex
