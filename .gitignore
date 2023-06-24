@@ -1,5 +1,7 @@
-# lab1
-lab1/**/*.aux
-lab1/**/*.dvi
-lab1/**/*.log
-lab1/**/*.syntex
+# TeX files
+lab?/**/*.aux
+lab?/**/*.dvi
+lab?/**/*.log
+lab?/**/*.syntex
+lab?/**/*.tuc
+lab?/**/*.db

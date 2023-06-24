@@ -1,0 +1,168 @@
+\setuppapersize[A4]
+\setupbodyfont[dejavu]
+
+\mainlanguage[russian]
+\language[ru]
+
+% нумерация
+\setupfootertexts[]
+\setuppagenumbering[state=start, location=bottom]
+
+% Главы
+\setuphead[section][
+  style=\bfb,
+  indentnext=yes,
+]
+
+\setuphead[subsection][
+  style=\bfa,
+  indentnext=yes,
+]
+\setupindenting[yes,medium]
+\setuplabeltext[ru][appendix={Приложение }]
+
+\starttext
+
+\startalignment[middle, wide]
+{\bfd Лабораторная работа №2} \blank[big]
+{\tfb "Работа с данными. Простые запросы на выборку"} \blank[4*big]
+{\tfb Выполнил студент группы Б20-505} \blank[big]
+{\bfb Сорочан Илья}
+{\vfill}
+{\tfa Московский Инженерно-Физический Институт} \blank[big] % здесь можно указать факультет или кафедру
+{\tfa Москва 2023} \blank[big] % здесь можно указать факультет или кафедру
+\stopalignment
+
+\page
+
+\startsection[title={Введение}]
+
+В данной лабораторной работе будут разработаны различные запросы. Запросы будут разобраны в самой лабораторной. Скрипт по созданию тестовой ДБ можно найти в приложении или в репозитории.
+
+\stopsection
+
+\page
+
+\startsection[title={Выполненные SQL запросы}]
+\startsubsection[title={Полная выборка}]
+
+В качестве примера выведем список доступных категорий товаров:
+\starttyping
+sqlite> select name from category;
+Ручки
+Тетради
+Карандаши
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Условная выборка}]
+
+Должности, на которых зарплата больше 2000:
+\starttyping
+sqlite> select name from job where job.salary > 2000;
+Менеджер
+Кассир
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Упорядоченная выборка}]
+
+Выведем должности, но теперь в порядке увеличения зарплат:
+\starttyping
+sqlite> select name from job order by job.salary;
+Уборщик
+Кассир
+Менеджер
+\stoptyping
+
+Наоборот:
+\starttyping
+sqlite> select name from job order by job.salary desc;
+Менеджер
+Кассир
+Уборщик
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Простые функции и операторы}]
+
+Посмотрим, на каких должностях больше всего подневная зарплата:
+\starttyping
+select name, job.salary / job.days_per_week from job order by job.salary desc;
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Агрегатные функции}]
+
+Найдем самые дорогие товары из каждой страны:
+\starttyping
+sqlite> select country,max(price) from product group by country;
+1|999
+2|1299
+3|1499
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Выбор уникальных записей}]
+
+Представим ситуацию, что мы хотим посмотреть какие работники отвечали за поставки за все время:
+\starttyping
+sqlite> select distinct employee from supply;
+1
+2
+3
+\stoptyping
+
+Для того, что бы вместо цифр были имена можно склеить две таблицы:
+\starttyping
+sqlite> select distinct name from employee join supply on employee.id = supply.employee;
+Джон Стоун
+Джек Воробей
+Партос
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Псевдо-выборка}]
+
+\starttyping
+sqlite> select 2*2;
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={VACUUM}]
+
+\starttyping
+sqlite> VACUUM;
+\stoptyping
+
+\stopsubsection
+
+\stopsection
+
+\page
+
+\startsection[title={Заключение}]
+
+В ходе данной лабораторной работы было выполнено 8 SQL запросов. Все запросы проиллюстрированы и разобраны в самой работе. Код для создания тестовой базы данных можно найти в приложении или на репозитории.
+
+\stopsection
+
+\startappendices
+
+\startchapter[title={}]
+
+Код для создания тестовой базы данных:
+\typefile{setup.sql}
+
+\stopchapter
+
+\stopappendices
+
+\stoptext
