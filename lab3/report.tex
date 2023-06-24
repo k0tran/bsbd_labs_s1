@@ -1,0 +1,146 @@
+\setuppapersize[A4]
+\setupbodyfont[dejavu]
+
+\mainlanguage[russian]
+\language[ru]
+
+% нумерация
+\setupfootertexts[]
+\setuppagenumbering[state=start, location=bottom]
+
+% Главы
+\setuphead[section][
+  style=\bfb,
+  indentnext=yes,
+]
+
+\setuphead[subsection][
+  style=\bfa,
+  indentnext=yes,
+]
+\setupindenting[yes,medium]
+\setuplabeltext[ru][appendix={Приложение }]
+
+\starttext
+
+\startalignment[middle, wide]
+{\bfd Лабораторная работа №3} \blank[big]
+{\tfb "Сложные запросы на выборку. Соединения"} \blank[4*big]
+{\tfb Выполнил студент группы Б20-505} \blank[big]
+{\bfb Сорочан Илья}
+{\vfill}
+{\tfa Московский Инженерно-Физический Институт} \blank[big] % здесь можно указать факультет или кафедру
+{\tfa Москва 2023} \blank[big] % здесь можно указать факультет или кафедру
+\stopalignment
+
+\page
+
+\startsection[title={Введение}]
+
+В данной лабораторной работе будут разработаны различные запросы. Запросы будут разобраны в самой лабораторной. Скрипт по созданию тестовой ДБ можно найти в приложении или в репозитории.
+
+\stopsection
+
+\page
+
+\startsection[title={Выполненные SQL запросы}]
+\startsubsection[title={Подзапросы}]
+
+Должности, на которых зарплата выше среднего:
+\starttyping
+sqlite> select job.name from job where job.salary > (select avg(job.salary) from job);
+Менеджер
+\stoptyping
+
+Товары, цена которых выше среднего:
+\starttyping
+sqlite> select product.id from product where product.price > (select avg(product.price) from product);
+1
+3
+4
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Соединение}]
+
+Должности, на которых зарплата больше 2000:
+\starttyping
+sqlite> select employee.name, job.name from employee, job where employee.job = job.id;
+Джон Стоун|Менеджер
+Джек Воробей|Кассир
+Партос|Уборщик
+\stoptyping
+
+Покупатель для последних 10 покупок:
+\starttyping
+sqlite> select sale.id, customer.name from sale, customer where sale.customer = customer.id order by sale.date limit 10;
+1|Вася Пупкин
+2|Джек Ричер
+3|Том Сойер
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Теоретико-множественные операции}]
+
+Посмотрим, на каких должностях можно заработать много либо работать мало:
+\starttyping
+sqlite> select name from job where salary > 2000 union select name from job where days_per_week < 5;
+Кассир
+Менеджер
+\stoptyping
+
+Иногда продавцы могут покупать товары на свое имя. Посмотрим есть ли такие:
+\starttyping
+sqlite> select name from employee intersect select name from customer;
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Обычные и рекурсивные табличные выражения}]
+
+В прошлой лабораторной мы выводили имена сотрудников, отвечавших за доставку хоть раз. В этот раз выведем не только имена, но и всю информацию о них:
+\starttyping
+sqlite> with supply_emp as (select distinct employee from supply) select * from employee where id in supply_emp;
+1|1|Джон Стоун|1|2023-12-31
+2|2|Джек Воробей|1|2024-06-30
+3|3|Партос|0|2023-09-30
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Аналитические функции}]
+
+Посмотрим как меняются цены за доставку:
+\starttyping
+sqlite> select id, (price - lag(price, 1, null) over (order by date)) as change from supply;
+1|
+2|-100
+3|650
+\stoptyping
+
+\stopsubsection
+
+\stopsection
+
+\page
+
+\startsection[title={Заключение}]
+
+В ходе данной лабораторной работы было выполнено 8 SQL запросов. Все запросы проиллюстрированы и разобраны в самой работе. Код для создания тестовой базы данных можно найти в приложении или на репозитории.
+
+\stopsection
+
+\startappendices
+
+\startchapter[title={}]
+
+Код для создания тестовой базы данных:
+\typefile{setup.sql}
+
+\stopchapter
+
+\stopappendices
+
+\stoptext
