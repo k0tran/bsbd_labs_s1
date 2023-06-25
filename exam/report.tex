@@ -1,0 +1,291 @@
+\setuppapersize[A4]
+\setupbodyfont[dejavu]
+
+\mainlanguage[russian]
+\language[ru]
+
+% нумерация
+\setupfootertexts[]
+\setuppagenumbering[state=start, location=bottom]
+
+% Главы
+\setuphead[section][
+  style=\bfb,
+  indentnext=yes,
+]
+
+\setuphead[subsection][
+  style=\bfa,
+  indentnext=yes,
+]
+\setupindenting[yes,medium]
+\setuplabeltext[ru][appendix={Приложение }]
+
+\starttext
+
+\startalignment[middle, wide]
+{\bfd Зачетная работа} \blank[big]
+{\tfb Выполнил студент группы Б20-505} \blank[big]
+{\bfb Сорочан Илья}
+{\vfill}
+{\tfa Московский Инженерно-Физический Институт} \blank[big] % здесь можно указать факультет или кафедру
+{\tfa Москва 2023} \blank[big] % здесь можно указать факультет или кафедру
+\stopalignment
+
+\page
+
+\startsection[title={Задание}]
+
+Задача данной работы: подробно описать процесс создания сложного SQL запроса к ранее разработанной в лабороторных базе данных.
+
+Для каждого сотрудника вывести таблицу с:
+\startitemize[n][start=1]
+  \item именем;
+  \item названием должности;
+  \item общей суммой продаж (в которых он кассир);
+  \item число различных типов товаров, среди проданных им;
+  \item наименование самой распространенной категории товаров среди проданных им.
+\stopitemize
+
+В следующей главе рассмотрим каждый пункт по порядку
+
+\stopsection
+
+\page
+
+\startsection[title={Запросы}]
+\startsubsection[title={Имя и название должности}]
+
+Первые два пункта получить относительно просто:
+\starttyping
+SELECT
+  employee.name, job.name
+FROM
+  employee, job
+WHERE
+  employee.job = job.id;
+\stoptyping
+
+Данный запрос выдаст:
+\starttyping
+Джон Стоун|Менеджер
+Джек Воробей|Кассир
+Партос|Уборщик
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Общая сумма продаж}]
+
+Здесь уже сложнее, так как требуется обработать данные из трех таблиц. В первую очередь нас интересует таблица sale, в которой хранятся все продажи. Из них мы создаем группы (окна) по продавцу. При это для суммирования цен нам понадобится таблица product, которая хранит айди покупки, к которой принадлежит. И наконец после получения результата его нужно будет объеденить с запросом из предыдущего подраздела.
+
+Запрос:
+\starttyping
+SELECT
+  employee.name, SUM(product.price)
+FROM
+  sale
+JOIN
+  employee ON sale.employee = employee.id
+JOIN
+  product ON sale.id = product.sale
+GROUP BY
+  employee.id;
+\stoptyping
+
+Результат:
+\starttyping
+Джон Стоун|899
+Джек Воробей|1299
+Партос|129
+\stoptyping
+
+Здесь мы сначала связываем в одну таблицу информацию о продажах, рабочих и товарах, а затем используем агрегатную функцию SUM с разделением по айди рабочих (основной ключ).
+
+Теперь объединим данный запрос с запросом из предыдущей секции:
+\starttyping
+SELECT
+  employee.name, job.name, SUM(product.price), COUNT(DISTINCT product.type)
+FROM
+  sale
+JOIN
+  employee ON sale.employee = employee.id
+JOIN
+  product ON sale.id = product.sale
+JOIN
+  job ON employee.job = job.id
+GROUP BY
+  employee.id;
+\stoptyping
+
+Выдает следующий результат:
+\starttyping
+Джон Стоун|Менеджер|899
+Джек Воробей|Кассир|1299
+Партос|Уборщик|129
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Число различных типов товаров}]
+
+Необходимо найти число различных типов товаров, проданных один продавцем. Данный запрос легко выполнить, добавив COUNT(DISTINCT product.type) в предыдущий запрос:
+\starttyping
+SELECT
+  employee.name, job.name, SUM(product.price), COUNT(DISTINCT product.type)
+FROM
+  sale
+JOIN
+  employee ON sale.employee = employee.id
+JOIN
+  product ON sale.id = product.sale
+JOIN
+  job ON employee.job = job.id
+GROUP BY
+  employee.id;
+\stoptyping
+
+Результат:
+\starttyping
+Джон Стоун|Менеджер|899|1
+Джек Воробей|Кассир|1299|1
+Партос|Уборщик|129|1
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Самая распространненная категория}]
+
+Последний столбец конечного запроса должен содержать самую распространенную категорию, проданную рабочим.
+
+Начнем с самого простого: получим таблицу и подсчетом всех категорий для всех продаж.
+\starttyping
+SELECT
+  category.id, category.name, COUNT(*)
+FROM
+  category
+JOIN
+  product_type ON product_type.category = category.id
+JOIN
+  product ON product.type = product_type.code
+WHERE
+  product.sold = true
+GROUP BY
+  category.id;
+\stoptyping
+
+Вывод:
+\starttyping
+1|Ручки|1
+2|Тетради|1
+3|Карандаши|1
+\stoptyping
+
+Теперь, данную таблицу можно будет использовать в основном запросе, необходимо только добавить столбец с наименованием рабочего-кассира:
+\starttyping
+SELECT
+  category.id, category.name, COUNT(*), sale.employee
+FROM
+  category
+JOIN
+  product_type ON product_type.category = category.id
+JOIN
+  product ON product.type = product_type.code
+JOIN
+  sale ON product.sale = sale.id
+WHERE
+  product.sold = true
+GROUP BY
+  category.id;
+\stoptyping
+
+Выдает:
+\starttyping
+Ручки|1|1
+Тетради|1|3
+Карандаши|1|2
+\stoptyping
+
+Наконец, объеденим данный запрос с предыдущим:
+\starttyping
+SELECT
+  employee.name, job.name, SUM(product.price), COUNT(DISTINCT product.type), category_count_list.category_name
+FROM
+  sale
+JOIN
+  employee ON sale.employee = employee.id
+JOIN
+  product ON sale.id = product.sale
+JOIN
+  job ON employee.job = job.id
+JOIN
+  (
+    SELECT
+      category.name as category_name, COUNT(*) AS category_count, sale.employee
+    FROM
+      category
+    JOIN
+      product_type ON product_type.category = category.id
+    JOIN
+      product ON product.type = product_type.code
+    JOIN
+      sale ON product.sale = sale.id
+    WHERE
+      product.sold = true
+    GROUP BY
+      category.id, sale.employee
+    HAVING
+      category_count = (
+        SELECT
+          MAX(subquery.category_count)
+        FROM
+          (
+            SELECT
+              COUNT(*) AS category_count, sale.employee
+            FROM
+              category
+            JOIN
+              product_type ON product_type.category = category.id
+            JOIN
+              product ON product.type = product_type.code
+            JOIN
+              sale ON product.sale = sale.id
+            WHERE
+              product.sold = true
+            GROUP BY
+              category.id, sale.employee
+          ) AS subquery
+        WHERE
+          subquery.employee = sale.employee
+      )
+  ) AS category_count_list ON category_count_list.employee = employee.id
+GROUP BY
+  employee.id;
+\stoptyping
+
+Здесь выполняется два подзапроса: один подсчитывает число категорий, другой отбирает максимальные.
+
+\stopsubsection
+
+\stopsection
+
+\page
+
+\startsection[title={Заключение}]
+
+Задание было выполнено, запрос можно найти в последней секции предыдущей главы. От себя отмечу что коследний столбец был очень сложен, в силу чего я мог сделать неоптимизированный запрос.
+
+\stopsection
+
+\startappendices
+
+\startchapter[title={}]
+
+Код для создания тестовой базы данных:
+\typefile{setup.sql}
+
+\stopchapter
+
+\stopappendices
+
+\stoptext
